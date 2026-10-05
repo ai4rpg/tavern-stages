@@ -1,0 +1,114 @@
+{
+  "name": "@ai4rpg/dsh-tavern-stages",
+  "description": "DSH plugin that brings tavern-design, tavern-cards, and tavern-ui workflows into dsh-stage-switch stages",
+  "version": "0.1.0",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ai4rpg/tavern-stages.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ai4rpg/tavern-stages/issues"
+  },
+  "homepage": "https://github.com/ai4rpg/tavern-stages#readme",
+  "type": "module",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./src/*": "./src/*",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib",
+    "src",
+    "docs",
+    "scripts/prompts.mjs",
+    "scripts/sync-prompts.mjs"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": "^22.19 || >=24"
+  },
+  "scripts": {
+    "prebuild": "node scripts/sync-prompts.mjs",
+    "pretest": "node scripts/sync-prompts.mjs",
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.4",
+    "@deepseek-ai/dsh-agent": "^0.2.0-rc.2",
+    "@deepseek-ai/dsh-commands": "^0.2.0-rc.2",
+    "@deepseek-ai/dsh-fs": "^0.2.0-rc.2",
+    "@deepseek-ai/dsh-session": "^0.2.0-rc.2",
+    "@deepseek-ai/dsh-subagent": "^0.2.0-rc.2",
+    "@deepseek-ai/dsh-subagent-in-process-driver": "^0.2.0-rc.2",
+    "@deepseek-ai/dsh-tool-subagent": "^0.2.0-rc.2",
+    "@deepseek-ai/dsh-tools": "^0.2.0-rc.2"
+  },
+  "devDependencies": {
+    "@deepseek-ai/cordis": "^4.0.4",
+    "@deepseek-ai/cordis-plugin-include": "^1.0.9",
+    "@deepseek-ai/cordis-plugin-loader": "^1.0.5",
+    "@deepseek-ai/dsh-agent": "^0.2.0-rc.2",
+    "@deepseek-ai/dsh-agent-instructions": "^0.2.0-rc.2",
+    "@deepseek-ai/dsh-agent-loop": "^0.2.0-rc.2",
+    "@deepseek-ai/dsh-agent-loop-testkit": "^0.2.0-rc.2",
+    "@deepseek-ai/dsh-agent-preset": "^0.2.0-rc.2",
+    "@deepseek-ai/dsh-agent-preset-registry": "^0.2.0-rc.2",
+    "@deepseek-ai/dsh-commands": "^0.2.0-rc.2",
+    "@deepseek-ai/dsh-fs": "^0.2.0-rc.2",
+    "@deepseek-ai/dsh-invariants": "^0.2.0-rc.2",
+    "@deepseek-ai/dsh-llm": "^0.2.0-rc.2",
+    "@deepseek-ai/dsh-llm-deepseek": "^0.2.0-rc.2",
+    "@deepseek-ai/dsh-persona": "^0.2.0-rc.2",
+    "@deepseek-ai/dsh-scope": "^0.2.0-rc.2",
+    "@deepseek-ai/dsh-session": "^0.2.0-rc.2",
+    "@deepseek-ai/dsh-session-projection": "^0.2.0-rc.2",
+    "@deepseek-ai/dsh-skill": "^0.2.0-rc.2",
+    "@deepseek-ai/dsh-skill-filesystem": "^0.2.0-rc.2",
+    "@deepseek-ai/dsh-subagent": "^0.2.0-rc.2",
+    "@deepseek-ai/dsh-subagent-in-process-driver": "^0.2.0-rc.2",
+    "@deepseek-ai/dsh-subagent-spawn-in-process": "^0.2.0-rc.2",
+    "@deepseek-ai/dsh-system-prompt": "^0.2.0-rc.2",
+    "@deepseek-ai/dsh-token-meter": "^0.2.0-rc.2",
+    "@deepseek-ai/dsh-tool-subagent": "^0.2.0-rc.2",
+    "@deepseek-ai/dsh-tools": "^0.2.0-rc.2",
+    "@deepseek-ai/dsh-user-questions": "^0.2.0-rc.2",
+    "@types/node": "^24.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.9.0",
+    "vitest": "^4.0.0"
+  },
+  "dependencies": {
+    "@ai4rpg/dsh-stage-switch": "^0.2.0",
+    "@ai4rpg/tavern-cards-forge": "^0.1.0",
+    "yaml": "^2.8.4"
+  },
+  "//dependencies-note": "All @ai4rpg dependencies except tavern-agents resolve from npm as plain versioned deps. @ai4rpg/dsh-stage-switch ^0.2.0 is the stage machine this plugin extends (0.2.0 reads session stage records through the session-projection seam and carries the `language` row config; its required peer @deepseek-ai/dsh-session-projection is composed by dsh-base, so deployments satisfy it without listing it here). @ai4rpg/tavern-cards-forge ^0.1.0 ships the forge CLI (dist/index.mjs) that the tavern_forge tool runs. @ai4rpg/tavern-agents carries the named-subagent personas (CC BY-NC-SA, so they do not ship in this MIT package) and is deliberately NOT a dependency of this package: this package publishes to npm, and a published manifest must not carry file: specs. The personas reach the profile through the tavern content repo instead: @ai4rpg/dsh-tavern-preset depends on @ai4rpg/tavern-agents via a file:../tavern-agents spec that stays inside that self-contained repo, pnpm hoists the content package into the profile's node_modules, and resolveAgentsDir() finds it from here with createRequire. TAVERN_AGENTS_ROOT overrides the resolution for tests, and the real-package tests skip when the package is unresolvable: this repo deliberately carries no file: devDependency, so a fresh clone resolves nothing; install the content package from a local checkout without saving it (npm i --no-save <tavern-content>/tavern-agents) to re-enable them. stage-switch rides as a real dependency (not a peer) because dsh-base does not provide it: downstream deployments resolve it from this package's install, and autoInstallPeers is false in DSH profiles.",
+  "peerDependenciesMeta": {
+    "@deepseek-ai/dsh-commands": {
+      "optional": true
+    },
+    "@deepseek-ai/dsh-tools": {
+      "optional": true
+    },
+    "@deepseek-ai/dsh-subagent": {
+      "optional": true
+    },
+    "@deepseek-ai/dsh-subagent-in-process-driver": {
+      "optional": true
+    },
+    "@deepseek-ai/dsh-tool-subagent": {
+      "optional": true
+    }
+  }
+}
