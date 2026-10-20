@@ -19,14 +19,6 @@ export interface TavernPrompts {
   readonly section: string
   /** The `tavern-cards/ui-complete` guidance rendered in the ui stage when done. */
   readonly uiComplete: string
-  /** Path block appended to a named subagent's first prompt: the resolved
-   * absolute directories of the tavern skills that agent body references, so
-   * the child can read its `references/` docs without a `skill` lookup. */
-  readonly subagentSkillDirs: {
-    readonly heading: string
-    readonly line: string
-    readonly note: string
-  }
   /** Model-facing `tavern_forge` tool copy. */
   readonly forgeTool: {
     readonly description: string
@@ -49,13 +41,8 @@ export const DEFAULT_TAVERN_PROMPTS = {
     "content": "Use the `tavern-cards` skill to create or revise card content: write and register all planned entries, implement MVU/EJS/configure when required, and write the opening messages. Packaging is available at any time as a preview/verification action.",
     "ui": "Work in the `tavern-ui` skill: build the text status bar or frontend UI as required, and verify it in SillyTavern with packaged previews."
   },
-  "section": "Current stage policy: every stage owns a deliverable — design: design-spec.md (a fresh project's direction); planning: 创作规划.yaml (scope); content: new or revised entries, MVU/EJS/configure, opening messages; ui: the status bar or frontend. goto_stage can jump to any stage — forward, backward, or skipping — not only the next; jump backward when an earlier artifact must change. A direction change is design work even when design-spec.md already exists; a tweak to an already-planned artifact (an entry, a scope parameter, or the interface) is NOT design work — it belongs to its owning stage, usually content. Completion signals here are file-based heuristics and can fire early or stay stale; if you are still mid-change, finish the current work first and treat this as a checkpoint, not an order to move on. When the current stage's deliverable is genuinely done, call goto_stage to advance.",
+  "section": "Current stage policy: every stage owns a deliverable — design: design-spec.md (a fresh project's direction); planning: 创作规划.yaml (scope); content: new or revised entries, MVU/EJS/configure, opening messages; ui: the status bar or frontend. goto_stage can jump to any stage — forward, backward, or skipping — not only the next; jump backward when an earlier artifact must change. A direction change is design work even when design-spec.md already exists; a tweak to an already-planned artifact (an entry, a scope parameter, or the interface) is NOT design work — it belongs to its owning stage, usually content. Completion signals here are file-based heuristics and can fire early or stay stale; if you are still mid-change, finish the current work first and treat this as a checkpoint, not an order to move on. When the current stage's deliverable is genuinely done, call goto_stage to advance. Delegation tools return an activation id immediately; the child's final answer arrives later as a completion notification — wait for it before continuing with any step that depends on the result.",
   "uiComplete": "The ui stage deliverable appears complete: the 正则/ replacement files read as deployed content (no local preview references) and a pack has succeeded. This is a file-based heuristic and can fire early or stay stale — if you are still iterating on the interface, continue the current work and ignore this note. Once you are confident it is done, call goto_stage with stage \"route\" to return to the entry router and stand by; every stage stays reachable by jumping backward, so later revisions to design/planning/content/ui remain normal.",
-  "subagentSkillDirs": {
-    "heading": "Resolved tavern skill directories for this run — read the referenced docs directly, no `skill` lookup needed:",
-    "line": "`{skill}` → `{dir}`",
-    "note": "In this agent body, paths written relative to a skill directory are relative to the matching directory above."
-  },
   "forgeTool": {
     "description": "Run a tavern_forge CLI command (init, configure, query, patch, pack, unpack, validate-mvu, export, …). Prefer this over shell. To pack a project: command=\"pack\", args=[projectName].",
     "command": "Forge subcommand, e.g. pack, init, configure, patch, query",

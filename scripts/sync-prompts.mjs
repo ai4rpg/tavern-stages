@@ -61,14 +61,6 @@ export interface TavernPrompts {
   readonly section: string
   /** The \`tavern-cards/ui-complete\` guidance rendered in the ui stage when done. */
   readonly uiComplete: string
-  /** Path block appended to a named subagent's first prompt: the resolved
-   * absolute directories of the tavern skills that agent body references, so
-   * the child can read its \`references/\` docs without a \`skill\` lookup. */
-  readonly subagentSkillDirs: {
-    readonly heading: string
-    readonly line: string
-    readonly note: string
-  }
   /** Model-facing \`tavern_forge\` tool copy. */
   readonly forgeTool: {
     readonly description: string

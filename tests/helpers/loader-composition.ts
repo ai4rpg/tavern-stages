@@ -5,7 +5,7 @@
 //
 // The spec that imports this:
 //   - tests/loader-composition.spec.ts — general Loader composition (plugin
-//     load, stage eligibility, ui-complete, named-subagent tool wiring)
+//     load, stage eligibility, ui-complete)
 //
 // Helpers split out:
 //   MemoryFs      — an in-memory dsh-fs FileSystem the composition writes to.

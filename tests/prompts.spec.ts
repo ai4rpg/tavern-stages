@@ -22,4 +22,19 @@ describe('prompt single source', () => {
     // reads it as one more current-state policy in the runtime snapshot.
     expect(tavernPrompts.section).toMatch(/^Current stage policy:/)
   })
+
+  it('carries no subagent skill-directory block', () => {
+    // The block fed the body-prepending provider, which dsh 0.2.1 removed:
+    // children are preset compositions now and read their docs through the
+    // `skill` tool. Keep the key from creeping back as dead copy.
+    expect('subagentSkillDirs' in tavernPrompts).toBe(false)
+  })
+
+  it('tells the model that delegation results arrive asynchronously', () => {
+    // dsh 0.2.1 delegation returns an activation id and delivers the answer
+    // through the parent's completion notification. The skills carry the same
+    // rule; this stage:policy sentence is the fallback for a session that
+    // never reads them.
+    expect(tavernPrompts.section).toContain('completion notification')
+  })
 })

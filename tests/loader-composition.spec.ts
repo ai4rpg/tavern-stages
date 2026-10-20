@@ -1,8 +1,8 @@
 import { writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { dirname, join } from 'node:path'
+import { join } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
 import { Loader } from '@deepseek-ai/cordis-plugin-loader'
 import { Include } from '@deepseek-ai/cordis-plugin-include'
@@ -14,9 +14,6 @@ import SessionProjection from '@deepseek-ai/dsh-session-projection'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
 import TokenMeter from '@deepseek-ai/dsh-token-meter'
-import SubagentRuntime from '@deepseek-ai/dsh-subagent'
-import * as SpawnProvider from '@deepseek-ai/dsh-subagent-spawn-in-process'
-import * as ToolSubagent from '@deepseek-ai/dsh-tool-subagent'
 import { FsVersion } from '@deepseek-ai/dsh-fs'
 import StageController from '@ai4rpg/dsh-stage-switch'
 import { TAVERN_CARDS_PACKED, TAVERN_UI_COMPLETE_SECTION, tavernCardsStageConfig } from '../src/index.ts'
@@ -27,13 +24,10 @@ import { seedStage } from './helpers/seed-stage.ts'
 // Shared fixtures (MemoryFs, makeAgent, preStep, assembleFor) live in
 // tests/helpers/loader-composition.ts, which this is the only consumer of.
 
-const FIXTURES = join(dirname(fileURLToPath(import.meta.url)), 'fixtures')
-
 let root: string | undefined
 let context: Context | undefined
 
 afterEach(async () => {
-  vi.unstubAllEnvs()
   await context?.fiber.dispose()
   context = undefined
   if (root !== undefined) await rm(root, { recursive: true, force: true })
@@ -271,117 +265,5 @@ describe('real Loader composition through cordis.yml', () => {
       .toBe('')
   })
 
-  it('registers the four named subagent tools when subagents.enabled is set on a host that composes a spawn provider', { timeout: 60_000 }, async () => {
-    root = await mkdtemp(join(tmpdir(), 'tavern-stages-subagents-'))
-    // Fixture personas via TAVERN_AGENTS_ROOT: this composition test pins
-    // the declarative-row ↔ provider wiring (a mechanism), not the real
-    // content — the real-package smoke lives in
-    // tests/subagent-provider.spec.ts and skips when the content package
-    // is not installed.
-    vi.stubEnv('TAVERN_AGENTS_ROOT', join(FIXTURES, 'agents-roster'))
-    const configPath = join(root, 'cordis.yml')
-    await writeFile(configPath, [
-      "- name: '@deepseek-ai/dsh-session'",
-      // dsh 0.1.5: dsh-tool-subagent injects the mandatory session-projection
-      // seam, so without this row the declarative tool rows never register.
-      "- name: '@deepseek-ai/dsh-session-projection'",
-      "- name: '@deepseek-ai/dsh-system-prompt'",
-      "- name: '@deepseek-ai/dsh-tools'",
-      "- name: '@deepseek-ai/dsh-agent'",
-      "- name: '@deepseek-ai/dsh-subagent'",
-      "- name: '@deepseek-ai/dsh-subagent-spawn-in-process'",
-      "- name: '@ai4rpg/dsh-tavern-stages'",
-      '  config:',
-      '    subagents:',
-      '      enabled: true',
-      // Middle-path wiring: the model-facing tools are declarative tool-subagent
-      // rows (mirroring the preset tavern group), bound to the tavern:<name>
-      // providers the plugin registers.
-      "- name: '@deepseek-ai/dsh-tool-subagent'",
-      '  id: tool-subagent-check-agent',
-      '  config:',
-      '    provider: tavern:check-agent',
-      '    toolName: check-agent',
-      '    enableRunInBackground: false',
-      '    backgroundMode: one-shot',
-      '    maxDepth: provider-managed',
-      "- name: '@deepseek-ai/dsh-tool-subagent'",
-      '  id: tool-subagent-conversion-agent',
-      '  config:',
-      '    provider: tavern:conversion-agent',
-      '    toolName: conversion-agent',
-      '    enableRunInBackground: false',
-      '    backgroundMode: one-shot',
-      '    maxDepth: provider-managed',
-      "- name: '@deepseek-ai/dsh-tool-subagent'",
-      '  id: tool-subagent-first-message-agent',
-      '  config:',
-      '    provider: tavern:first-message-agent',
-      '    toolName: first-message-agent',
-      '    enableRunInBackground: false',
-      '    backgroundMode: one-shot',
-      '    maxDepth: provider-managed',
-      "- name: '@deepseek-ai/dsh-tool-subagent'",
-      '  id: tool-subagent-schema-agent',
-      '  config:',
-      '    provider: tavern:schema-agent',
-      '    toolName: schema-agent',
-      '    enableRunInBackground: false',
-      '    backgroundMode: one-shot',
-      '    maxDepth: provider-managed',
-      '',
-    ].join('\n'))
-
-    context = new Context()
-    context.baseUrl = pathToFileURL(root).href + '/'
-    await context.plugin(Loader, {})
-    context.loader.builtins.include = Include
-    // `@deepseek-ai/dsh-subagent` has a default export (the SubagentRuntime
-    // service class); `subagent-spawn-in-process` and `dsh-tool-subagent` are
-    // namespace modules with no default, so pass the namespace objects —
-    // Loader resolves `.default ?? exports` and mounts them as plugins.
-    const modules = new Map<string, unknown>([
-      ['@deepseek-ai/dsh-session', SessionStore],
-      ['@deepseek-ai/dsh-session-projection', SessionProjection],
-      ['@deepseek-ai/dsh-system-prompt', SystemPrompt],
-      ['@deepseek-ai/dsh-tools', ToolRuntime],
-      ['@deepseek-ai/dsh-agent', AgentRegistry],
-      ['@deepseek-ai/dsh-subagent', SubagentRuntime],
-      ['@deepseek-ai/dsh-subagent-spawn-in-process', SpawnProvider],
-      ['@deepseek-ai/dsh-tool-subagent', ToolSubagent],
-      ['@ai4rpg/dsh-tavern-stages', TavernCards],
-    ])
-    context.loader.internal = {
-      version: 'v2',
-      async import(specifier: string) {
-        if (!modules.has(specifier)) throw new Error(`unexpected Loader import: ${specifier}`)
-        return modules.get(specifier)
-      },
-    } as unknown as NonNullable<typeof context.loader.internal>
-    await context.loader.create({ name: 'cordis:include', config: { path: pathToFileURL(configPath).href } })
-    await context.loader.await()
-    const loaderCtx = context
-    // `applySubagents` runs inside `ctx.inject`, whose async callback reads
-    // the four agent files and registers providers. Poll until the tavern
-    // providers appear rather than guessing a fixed delay.
-    const expectedProviders = ['check-agent', 'conversion-agent', 'first-message-agent', 'schema-agent']
-      .map(name => `tavern:${name}`)
-    for (let attempt = 0; attempt < 50; attempt += 1) {
-      await new Promise(resolve => setTimeout(resolve, 10))
-      if (expectedProviders.every(name => loaderCtx.subagents.list().includes(name))) break
-    }
-
-    // The four named delegation tools must be model-visible (the declarative
-    // tool-subagent rows mount them once their provider appears).
-    const toolNames = ['check-agent', 'conversion-agent', 'first-message-agent', 'schema-agent']
-    for (const name of toolNames) {
-      expect(loaderCtx.tools.get(name), `${name} should be registered`).toBeDefined()
-    }
-    // Each tool binds to a tavern-named provider.
-    const providers = loaderCtx.subagents.list()
-    expect(providers).toEqual(expect.arrayContaining(toolNames.map(name => `tavern:${name}`)))
-    // The host's own spawn provider stays available alongside.
-    expect(providers).toContain('spawn')
-  })
 })
 

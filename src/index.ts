@@ -9,6 +9,10 @@
  * - one composite eligibility predicate that tells stage-switch whether the
  *   *current* stage is complete, based on the tavern-cards project files.
  *
+ * Delegation is not part of the plugin: {@link loadTavernAgents} only loads the
+ * persona content the preset generator turns into `spawn` + `agentPreset`
+ * delegation rows and child presets.
+ *
  * @module @ai4rpg/dsh-tavern-stages
  */
 
@@ -16,8 +20,6 @@ import { Context } from '@deepseek-ai/cordis'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import type {} from '@deepseek-ai/dsh-commands'
 import type {} from '@deepseek-ai/dsh-tools'
-import { applySubagents } from './subagents.ts'
-import type { TavernSubagentOptions } from './subagents.ts'
 import { applyForgeTool, emitPacked, runForge, TAVERN_CARDS_PACKED } from './forge.ts'
 import { BehaviorFocus, cwdFromActor, focusWeightFromActor, projectFromPath } from './focus.ts'
 import { PackLedger } from './pack-ledger.ts'
@@ -42,7 +44,7 @@ export {
 } from './focus.ts'
 export { PackLedger } from './pack-ledger.ts'
 export { loadTavernAgents } from './subagents.ts'
-export type { TavernAgentDescriptor, TavernSubagentOptions } from './subagents.ts'
+export type { TavernAgentDescriptor } from './subagents.ts'
 export { isDesignSpecSubstantial } from './design.ts'
 export { isDeployedRegexFile, isUiRegexFileName, stripCodeFences } from './ui.ts'
 export { TavernCardsStatus } from './status.ts'
@@ -61,17 +63,6 @@ export type { TavernCardsStageName, TavernCardsStageConfigOptions } from './stag
 export interface TavernCardsConfig {
   /** Reserved for future per-deployment overrides. */
   readonly projectRoots?: string[]
-  /**
-   * Named subagent providers (one per `agents/*.md`), registered on
-   * the host `subagents` registry under `tavern:<name>`. Opt-in: defaults to
-   * disabled, and even when enabled it stays inert until the host composes a
-   * `subagents` service (e.g. `dsh-subagent-spawn-in-process`). The
-   * model-facing tools are NOT mounted by the plugin: the preset's tavern
-   * group carries one `@deepseek-ai/dsh-tool-subagent` row per agent bound
-   * to these providers.
-   * Registration is idempotent across preset mounts (see `src/subagents.ts`).
-   */
-  readonly subagents?: TavernSubagentOptions
 }
 
 /**
@@ -84,13 +75,8 @@ export function apply(ctx: Context, config: TavernCardsConfig = {}): void {
   // Skill registration belongs to the tavern content repo's preset package:
   // it ships the three skill bodies in its own skills/ directory and points its
   // `skill-filesystem` row's customSkillDirs at it (official cordis pattern).
-  // This package supplies the stage config, the project tools, and the named-subagent
-  // providers a preset composes.
-  //
-  // Named subagent tools (check / conversion / schema / first-message). Inert
-  // unless `config.subagents.enabled` is set AND the host composes a
-  // `subagents` service; `ctx.inject` defers registration until then.
-  applySubagents(ctx, config.subagents)
+  // This package supplies the stage config, the project tools, and the persona
+  // descriptors a preset's generator turns into delegation rows + child presets.
 
   // Model-facing forge tool. Pack is `command: 'pack'` — no separate
   // `tavern_pack` tool. Human slash commands below stay as shortcuts.
